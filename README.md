@@ -8,8 +8,6 @@ This repository contains a technical test that uses the Django Rest framework to
 2. **Filters for the Endpoint:**
    - The endpoint includes up to 3 filtering options, allowing users to refine the results from the consumed API. Filters may include, for example, a character's name, species, and status.
 
-3. **Option to Download Data in a ZIP File:**
-   - We offer users the ability to download the information in a ZIP file that contains the data in JSON format. This allows users to store the data locally and use it as needed.
 
 This project is designed in a modular and extensible way, allowing developers to add new features and consume different public APIs in the future. Good practices in Django Rest Framework development have been followed, and clear documentation for its use is provided.
 
