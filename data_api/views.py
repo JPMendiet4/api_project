@@ -1,11 +1,11 @@
-import zipfile
-from io import BytesIO
-import json
-import requests
 from django.http import HttpResponse
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
+import zipfile
+from io import BytesIO
+import json
+import requests
 from .models import Character
 from .serializers import CharacterSerializer
 
