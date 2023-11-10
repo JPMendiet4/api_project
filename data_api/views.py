@@ -1,7 +1,6 @@
 from django.http import HttpResponse
 from rest_framework import generics
 from rest_framework.response import Response
-from rest_framework.views import APIView
 import zipfile
 from io import BytesIO
 import json
@@ -9,20 +8,38 @@ import requests
 from .models import Character
 from .serializers import CharacterSerializer
 
-class AllCharacters(APIView):
-    def get(self, request):
-        api_url = "https://rickandmortyapi.com/api/character"
-        response = requests.get(api_url)
-
-        if response.status_code == 200:
-            data = response.json()
-            return Response(data)
-        else:
-            return Response({"error": "Failed to fetch data from the API."}, status=response.status_code)
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 class CharacterList(generics.ListAPIView):
     serializer_class = CharacterSerializer
 
+    @swagger_auto_schema(
+        operation_description="Obtener la lista de personajes de Rick and Morty.",
+        manual_parameters=[
+            openapi.Parameter(
+                'species', openapi.IN_QUERY, description="Filtrar por especie", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'status', openapi.IN_QUERY, description="Filtrar por estado", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'download', openapi.IN_QUERY, description="Descargar datos en un archivo ZIP",
+                type=openapi.TYPE_BOOLEAN
+            ),
+        ],
+        responses={200: CharacterSerializer(many=True)},
+        examples={
+            'Filtrar por especie y estado': {
+                'description': 'Obtener personajes de la especie "Human" y estado "Alive".',
+                'value': [{'species': 'Human', 'status': 'Alive'}],
+            },
+            'Descargar datos en archivo ZIP': {
+                'description': 'Descargar los datos en un archivo ZIP.',
+                'value': {'download': True},
+            },
+        }
+    )
     def fetch_and_store_data_from_api(self):
         api_url = "https://rickandmortyapi.com/api/character"
         response = requests.get(api_url)
@@ -51,6 +68,32 @@ class CharacterList(generics.ListAPIView):
 
         return queryset
 
+    @swagger_auto_schema(
+        operation_description="Obtener la lista de personajes de Rick and Morty con filtros.",
+        manual_parameters=[
+            openapi.Parameter(
+                'species', openapi.IN_QUERY, description="Filtrar por especie", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'status', openapi.IN_QUERY, description="Filtrar por estado", type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'download', openapi.IN_QUERY, description="Descargar datos en un archivo ZIP",
+                type=openapi.TYPE_BOOLEAN
+            ),
+        ],
+        responses={200: CharacterSerializer(many=True)},
+        examples={
+            'Filtrar por especie y estado': {
+                'description': 'Obtener personajes de la especie "Human" y estado "Alive".',
+                'value': [{'species': 'Human', 'status': 'Alive'}],
+            },
+            'Descargar datos en archivo ZIP': {
+                'description': 'Descargar los datos en un archivo ZIP.',
+                'value': {'download': True},
+            },
+        }
+    )
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = CharacterSerializer(queryset, many=True)
@@ -59,21 +102,21 @@ class CharacterList(generics.ListAPIView):
             # Prepara los datos para la descarga
             characters_data = serializer.data
 
-            # Crea un archivo ZIP en memoria y agrega los datos JSON
+            # Crea un archivo ZIP temporal y agrega los datos JSON
             buffer = BytesIO()
-            with zipfile.ZipFile(buffer, 'w') as zipf:
+            with zipfile.ZipFile(buffer, 'w') as myzip:
                 # Agrega los datos de la API a un archivo JSON en el ZIP
                 api_url = "https://rickandmortyapi.com/api/character"
                 response = requests.get(api_url)
                 api_data = response.json()
                 api_data_json = json.dumps(api_data, indent=4)
-                zipf.writestr("api_data.json", api_data_json)
+                myzip.writestr("api_data.json", api_data_json)
 
                 # Agrega los datos de la base de datos a un archivo JSON en el ZIP
                 db_data_json = json.dumps(characters_data, indent=4)
-                zipf.writestr("database_data.json", db_data_json)
+                myzip.writestr("database_data.json", db_data_json)
 
-            # Configura la respuesta HTTP para descargar el archivo ZIP
+            # Configura la respuesta HTTP para descargar el archivo ZIP temporal
             buffer.seek(0)
             response = HttpResponse(buffer.read(), content_type="application/zip")
             response['Content-Disposition'] = 'attachment; filename="characters_data.zip"'
